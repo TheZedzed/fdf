@@ -63,89 +63,48 @@ int	main_loop(t_fdf *fdf)
 int	key_press(int keycode, t_fdf *fdf)
 {
 	if (keycode == ESC_KEY)
-		quit(fdf, 0);
+		manage_heap(END, NULL);
 	return (0);
 }
 
-int	wrong_arg(int ac, char *filename)
-{
-	static char	*err_arg = "Wrong number of arguments\n";
-	static char *err_fdf = "Argument must be a file in format: *.fdf\n";
-	size_t		len;
-
-	if (ac == 2)
-	{
-		len = ft_strlen(filename);
-		if (len > 4 && !ft_strcmp(&filename[len - 4], ".fdf"))
-			return (0);
-		else
-			write(2, err_fdf, 41);
-	}
-	else
-		write(2, err_arg, 26);
-	return (1);
-}
-
-void	manage_heap(int type, void *addr, int *err)
+void	manage_heap(int type, void *addr)
 {
 	static t_list	*heap;
 	t_list			*new;
 
-	if (type == END)
+	if (type == END || !addr)
+	{
 		ft_lstclear(&heap, free);
-	else if (!addr)
-		*err = type;
+		if (type == END)
+			exit(0);
+		exit(1);
+	}
 	else
 	{
 		new = ft_lstnew(addr);
 		if (!new)
-			*err = SAVER;
-		else
-			ft_lstadd_back(&heap, new);
+			mange_heap(INIT, NULL);
+		ft_lstadd_back(&heap, new);
 	}
-}
-
-int	wrong_file(char *filename)
-{
-	int	fd;
-
-	fd = open(filename, O_DIRECTORY);
-	if (fd != -1)
-	{
-		close(fd);
-		ft_putstr_fd("Arg must be a map file not a directory\n", 2);
-		exit(1);
-	}
-	fd = open(filename, O_RDONLY);
-	if (fd == -1)
-	{
-		perror("open error");
-		exit(1);
-	}
-	return (fd);
 }
 
 int	main(int ac, char **av)
 {
 	t_fdf	*el;
-	int		err;
+	t_mlx	*mlx;
 
-	err = 0;
 	el = NULL;
-	if (!init(el) && !wrong_arg(el))
+	if (!fail_init(el, ac, av[1]))
 	{
-		fdf.fd = check_file(av[1]);
-		if (!parse(&fdf, 0))
+		mlx = el->mlx;
+		if (!parse(el, av[1]))
 		{
-			close(fdf.fd);
 			set_zoom_shift_and_z(&fdf);
 			mlx.img = &img;
-			init_mlx(&mlx, &fdf);
-			mlx_loop_hook(mlx.ptr, &main_loop, &fdf);
-			mlx_hook(mlx.win_ptr, 2, (1L << 0), &key_press, &fdf);
+			mlx_loop_hook(mlx->mlx_ptr, &main_loop, el);
+			mlx_hook(mlx->win_ptr, 2, (1L << 0), &key_press, el);
 			mlx_loop(mlx.ptr);
 		}
 	}
-	manage_heap(END, NULL, &err);
-	return (err);
+	return (manage_heap(END, NULL));
 }

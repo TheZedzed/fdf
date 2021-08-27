@@ -105,25 +105,25 @@ int	destack_recursion(t_fdf *fdf, char *str, unsigned int len)
 	return (fill_map_line(fdf, str, strs, len));
 }
 
-int	recursive_parse(t_fdf *fdf, unsigned int len)
+int	parse(t_fdf *fdf, char *filename)
 {
 	char	*str;
+	int		size;
+	int		fd;
 	int		i;
 
-	str = 0;
-	if (fdf->error_code)
-		return (recursive_error(str, 0, len, fdf));
-	i = get_next_line(fdf->fd, &str);
-	if (i == -1)
-		return (recursive_error(str, 0, len, fdf));
-	else
+	i = 1;
+	size = 0;
+	str = NULL;
+	fd = open(filename, O_RDONLY);
+	while (i)
 	{
-		if (i)
-			recursive_parse(fdf, len + 1);
-		else
-			return (eof_recursion(fdf, str, len));
+		i = get_next_line(fd, &str);
+		if (i == -1)
+			return (1);
+		else if (i)
+			++size;
 	}
-	if (fdf->error_code)
-		return (recursive_error(str, 0, len, fdf));
-	return (destack_recursion(fdf, str, len));
+	close(fd);
+	return (fill_map(fdf, size));
 }
