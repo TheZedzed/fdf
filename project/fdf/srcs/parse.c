@@ -1,129 +1,122 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ft_parse.c                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: tcharvet <tcharvet@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/08/09 18:21:21 by tcharvet          #+#    #+#             */
-/*   Updated: 2021/08/13 14:30:41 by tcharvet         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "fdf.h"
 
-#include "ft_fdf.h"
-
-void	fill_color_line(t_point *point, char **strs)
+static int	good_line(t_fdf *el, char **line)
 {
-	char	*str_color;
+	int	len;
+	int	i;
 
-	str_color = 0;
-	if (tab_len((void **)strs) == 2)
+	i = -1;
+	len = 0;
+	if (line)
 	{
-		str_color = strs[1];
-		if ((ft_strlen(str_color) > 2))
+		manage_heap(0, line, el);
+		while (line[++i])
 		{
-			if (!ft_strncmp(str_color, "0x", 2))
-			{
-				str_color = ft_str_tolower(str_color);
-				point->color = ft_atoi_base(&str_color[2], "0123456789abcdef");
-			}
-			else
-				point->color = ft_atoi(str_color);
-			if (! point->color)
-				point->color = 0x00ffffff;
+			manage_heap(0, line[i], el);
+			++len;
 		}
+		if (!el->width)
+			el->width = len;
+		if (len == el->width)
+			return (1);
 	}
-	else
+	return (0);
+}
+
+static void	fill_color(t_point *point, char *line)
+{
+	char	*color;
+	int		i;
+
+	color = ft_strchr(line, ',');
+	if (color && ++color)
+	{
+		if (!ft_strncmp(color, "0x", 2))
+		{
+			i = -1;
+			while (color[++i])
+				ft_tolower(color[i]);
+			point->color = ft_atoi_base(color + 2, "0123456789abcdef");
+		}
+		else
+			point->color = ft_atoi(color);
+	}
+	if (!color || !point->color)
 		point->color = 0x00ffffff;
 }
 
-int	fill_map_line(t_fdf *fdf, char *str, char **strs, unsigned int len)
+static int	create_line(t_fdf *el, char *str)
 {
-	unsigned int	i;
-	char			**strs_color;
+	static int	index = 0;
+	char		**line;
+	int			i;
 
-	i = 0;
-	if (!protect_malloc((void **)&fdf->map[len], sizeof(t_point) * fdf->width))
-		return (recursive_error(str, strs, len - 1, fdf));
-	while (strs[i])
+	line = ft_split(str, ' ');
+	if (good_line(el, line))
 	{
-		fdf->map[len][i].z = ft_atoi(strs[i]);
-		strs_color = ft_split(strs[i], ',');
-		if (!strs_color)
+		i = 0;
+		el->map[index] = ft_calloc(el->width, sizeof(t_point));
+		manage_heap(0, el->map[index], el);
+		while (line[i])
 		{
-			free_split(strs_color, -1);
-			return (recursive_error(str, strs, len, fdf));
+			el->map[index][i].z = ft_atoi(line[i]);
+			fill_color(&el->map[index][i], line[i]);
+			++i;
 		}
-		fill_color_line(&fdf->map[len][i], strs_color);
-		free_split(strs_color, -1);
-		++i;
+		++index;
+		return (1);
 	}
-	free(str);
-	free_split(strs, -1);
 	return (0);
 }
 
-int	eof_recursion(t_fdf *fdf, char *str, unsigned int len)
-{
-	char	**strs;
-
-	strs = 0;
-	fdf->height = len;
-	if (*str)
-		++fdf->height;
-	if (!protect_malloc((void **)&fdf->map, sizeof(t_point *) * fdf->height))
-		return (recursive_error(str, strs, len, fdf));
-	if (*str)
-	{
-		strs = ft_split(str, ' ');
-		if (!strs)
-			return (recursive_error(str, strs, len + 1, fdf));
-		fdf->width = tab_len((void **)strs);
-		fill_map_line(fdf, str, strs, len);
-	}
-	else
-		free(str);
-	return (0);
-}
-
-int	destack_recursion(t_fdf *fdf, char *str, unsigned int len)
-{
-	char			**strs;
-	unsigned int	tablen;
-
-	strs = ft_split(str, ' ');
-	if (!strs)
-		return (recursive_error(str, strs, len + 1, fdf));
-	tablen = tab_len((void **)strs);
-	if (!fdf->width)
-		fdf->width = tablen;
-	else
-	{
-		if (tablen != fdf->width)
-			return (recursive_error(str, strs, len + 1, fdf));
-	}
-	return (fill_map_line(fdf, str, strs, len));
-}
-
-int	parse(t_fdf *fdf, char *filename)
+static int	create_map(t_fdf *el, int fd)
 {
 	char	*str;
-	int		size;
-	int		fd;
 	int		i;
 
 	i = 1;
-	size = 0;
 	str = NULL;
-	fd = open(filename, O_RDONLY);
 	while (i)
 	{
 		i = get_next_line(fd, &str);
 		if (i == -1)
-			return (1);
-		else if (i)
-			++size;
+			return (0);
+		else if (*str)
+			++el->height;
+		free(str);
 	}
+	el->map = ft_calloc(el->height, sizeof(t_point *));
+	manage_heap(0, el->map, el);
 	close(fd);
-	return (fill_map(fdf, size));
+	return (1);
+}
+
+int	parse(t_fdf *el, char *filename)
+{
+	char	*str;
+	int		fd;
+	int		i;
+
+	i = 1;
+	str = NULL;
+	fd = open(filename, O_RDONLY);
+	if (fd != 1)
+	{
+		if (create_map(el, fd))
+		{
+			fd = open(filename, O_RDONLY);
+			while (i)
+			{
+				i = get_next_line(fd, &str);
+				if (i == -1 || (*str && !create_line(el, str)))
+				{
+					close(fd);
+					return (1);
+				}
+			}
+			close(fd);
+			return (0);
+		}
+	}
+	return (1);
 }

@@ -10,101 +10,80 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_fdf.h"
+#include "fdf.h"
 
-void	bresenham_algo(t_coordinates coord, t_fdf *fdf)
+static int	key_press(int keynote, t_fdf *el)
 {
-	t_point	origin;
-	t_point	end;
-	float	x_step;
-	float	y_step;
-	int		max;
-
-	origin = fdf->map[(int)coord.y][(int)coord.x];
-	end = fdf->map[(int)coord.y1][(int)coord.x1];
-	zoom_coord(&coord, fdf->zoom);
-	iso(&coord.x, &coord.y, origin.z, fdf->z_depth);
-	iso(&coord.x1, &coord.y1, end.z, fdf->z_depth);
-	shift_coord(&coord, fdf->shift_x, fdf->shift_y);
-	calc_step_and_max(&x_step, &y_step, &max, coord);
-	while ((int)(coord.x - coord.x1) || (int)(coord.y - coord.y1))
-	{
-		my_mlx_pixel_put(fdf->mlx->img, coord.x, coord.y, origin.color);
-		coord.x += x_step;
-		coord.y += y_step;
-	}
+	printf("ok\n");
+	if (keynote == 0xff1b)
+		manage_heap(1, NULL, el);
+	return (0);
 }
 
-int	main_loop(t_fdf *fdf)
+static int	main_loop(t_fdf *el)
 {
-	unsigned int	y;
-	unsigned int	x;
-	t_mlx			*mlx;
+	t_mlx	*mlx;
+	int		y;
+	int		x;
 
 	y = 0;
-	mlx = fdf->mlx;
-	while (y < fdf->height)
+	mlx = el->mlx;
+	while (y < el->height)
 	{
 		x = 0;
-		while (x < fdf->width)
+		while (x < el->width)
 		{
-			if (x < fdf->width - 1)
-				bresenham_algo((t_coordinates){x, y, x + 1, y}, fdf);
-			if (y < fdf->height - 1)
-				bresenham_algo((t_coordinates){x, y, x, y + 1}, fdf);
+			if (x < el->width - 1)
+				bresenham_algo((t_coordinates){x, y, x + 1, y}, el);
+			if (y < el->height - 1)
+				bresenham_algo((t_coordinates){x, y, x, y + 1}, el);
 			++x;
 		}
 		++y;
 	}
-	mlx_put_image_to_window(mlx->ptr, mlx->win_ptr, fdf->mlx->img->img, 0, 0);
+	mlx_put_image_to_window(mlx->mlx_ptr, mlx->win_ptr, mlx->img_ptr, 0, 0);
 	return (0);
 }
 
-int	key_press(int keycode, t_fdf *fdf)
+static void	set_zoom_shift_and_z(t_fdf *el)
 {
-	if (keycode == ESC_KEY)
-		manage_heap(END, NULL);
-	return (0);
-}
+	float	zoomy;
+	float	zoomx;
+	float	ratio;
 
-void	manage_heap(int type, void *addr)
-{
-	static t_list	*heap;
-	t_list			*new;
-
-	if (type == END || !addr)
-	{
-		ft_lstclear(&heap, free);
-		if (type == END)
-			exit(0);
-		exit(1);
-	}
-	else
-	{
-		new = ft_lstnew(addr);
-		if (!new)
-			mange_heap(INIT, NULL);
-		ft_lstadd_back(&heap, new);
-	}
+	zoomx = 1920 / (el->width - 1);
+	zoomy = 1080 / (el->height - 1);
+	ratio = fmaxf(el->width, el->height) / fminf(el->width, el->height) * 2;
+	el->zoom = fminf(zoomx, zoomy) / ratio;
+	if (el->zoom < 0)
+		el->zoom = 0;
+	el->shift_x = (1920 - (el->zoom * (el->width - 1))) / 2 ;
+	el->shift_y = (1080 - (el->zoom * (el->height - 1))) / 2 ;
+	el->z_depth = 2;
 }
 
 int	main(int ac, char **av)
 {
 	t_fdf	*el;
 	t_mlx	*mlx;
+	int		err;
 
 	el = NULL;
-	if (!fail_init(el, ac, av[1]))
+	err = init(&el, ac, av[1]);
+	if (!err)
 	{
-		mlx = el->mlx;
-		if (!parse(el, av[1]))
+		err = parse(el, av[1]);
+		if (!err)
 		{
-			set_zoom_shift_and_z(&fdf);
-			mlx.img = &img;
-			mlx_loop_hook(mlx->mlx_ptr, &main_loop, el);
-			mlx_hook(mlx->win_ptr, 2, (1L << 0), &key_press, el);
-			mlx_loop(mlx.ptr);
+			mlx = el->mlx;
+			set_zoom_shift_and_z(el);
+			mlx_hook(mlx->win_ptr, 2, (1L << 2), key_press, el);
+			mlx_hook(mlx->win_ptr, 12, (1L << 15), main_loop, el);
+			//mlx_hook(mlx->win_ptr, 33, (1L << 5), key_press, el);
+			mlx_loop(mlx->mlx_ptr);
 		}
+		else
+			write(2, "Parse error\n", 12);
 	}
-	return (manage_heap(END, NULL));
+	return (manage_heap(1, NULL, el));
 }

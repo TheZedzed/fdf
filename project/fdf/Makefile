@@ -13,15 +13,16 @@
 CC		:= gcc
 NAME	:= fdf
 CPPFLAGS	:= -I./libft/include -I./mlx
-CFLAGS	:= -Wall -Wextra -Werror
+CFLAGS	:= -g -Wall -Wextra -Werror
 LDFLAGS	:= -L./libft -L./mlx
-LDLIBS	:= -lft -lmlx -lX11 -lXext
-FILES	:= fdf coord_and_utils init max_min parse utils adjust bresenham keys
-RM	:= rm -rf
+LDLIBS	:= -lm -lft -lmlx -lX11 -lXext
+FILES	:= fdf bresenham init parse utils
+FILES_B	:= fdf bresenham init parse utils adjust bresenham keys
 SRCS := $(addsuffix .c, $(addprefix srcs/, $(FILES)))
-SRCS_B := $(addsuffix _bonus.c, $(addprefix srcs_bonus/, $(FILES)))
+SRCS_B := $(addsuffix _bonus.c, $(addprefix srcs_bonus/, $(FILES_B)))
 OBJS	:= $(SRCS:.c=.o)
 OBJS_B	:= $(SRCS_B:.c=.o)
+RM		:= rm -rf
 
 ifeq ($(BONUS), 1)
 	CPPFLAGS += -I./include_bonus

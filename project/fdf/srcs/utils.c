@@ -1,89 +1,44 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ft_utils4.c                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: tcharvet <tcharvet@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/08/13 14:23:41 by tcharvet          #+#    #+#             */
-/*   Updated: 2021/08/14 15:24:22 by tcharvet         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "fdf.h"
 
-#include "ft_fdf.h"
-
-unsigned int	tab_len(void **tab)
-{
-	unsigned int	i;
-
-	i = 0;
-	while (tab[i])
-		++i;
-	return (i);
-}
-
-void	ft_free_map(t_fdf *fdf, unsigned int len)
-{
-	if (fdf->map)
-	{
-		while (len < fdf->height)
-		{
-			free(fdf->map[len]);
-			++len;
-		}
-		free(fdf->map);
-		fdf->map = 0;
-	}
-}
-
-int	recursive_error(char *str, char **strs, unsigned int len, t_fdf *fdf)
-{
-	if (fdf->fd)
-	{
-		close(fdf->fd);
-		fdf->fd = 0;
-	}
-	if (!fdf->error_code)
-		fdf->error_code = 1;
-	if (str)
-		free(str);
-	free_split(strs, -1);
-	ft_free_map(fdf, len);
-	return (-1);
-}
-
-char	*ft_str_tolower(char *str)
-{
-	int	i;
-
-	i = -1;
-	while (str[++i])
-	{
-		if (str[i] >= 65 && str[i] <= 90)
-			str[i] += 32;
-	}
-	return (str);
-}
-
-void	quit(t_fdf *fdf, char *err)
+static void	quit(t_fdf *el)
 {
 	t_mlx	*mlx;
 
-	mlx = fdf->mlx;
-	ft_free_map(fdf, 0);
-	if (err)
+	if (el && el->mlx)
 	{
-		ft_putstr_fd(err, 2);
-		exit(1);
+		mlx = el->mlx;
+		if (mlx->img_ptr)
+			mlx_destroy_image(mlx->mlx_ptr, mlx->img_ptr);
+		if (mlx->win_ptr)
+			mlx_destroy_window(mlx->mlx_ptr, mlx->win_ptr);
+		if (mlx->mlx_ptr)
+		{
+			mlx_destroy_display(mlx->mlx_ptr);
+			free(mlx->mlx_ptr);
+		}
 	}
-	if (mlx->img)
-		mlx_destroy_image(mlx->ptr, mlx->img->img);
-	if (mlx->win_ptr)
-		mlx_destroy_window(mlx->ptr, mlx->win_ptr);
-	if (mlx->ptr)
+
+}
+
+int	manage_heap(int end, void *addr, t_fdf *el)
+{
+	static t_list	*heap;
+	t_list			*new;
+
+	if (end || !addr)
 	{
-		free(*(void **)mlx->ptr);
-		free(mlx->ptr);
+		quit(el);
+		ft_lstclear(&heap, free);
+		if (!addr && !end)
+			exit(1);
+		exit(0);
 	}
-	exit(0);
+	else
+	{
+		new = ft_lstnew(addr);
+		if (!new)
+			manage_heap(1, NULL, el);
+		ft_lstadd_back(&heap, new);
+	}
+	return (0);
 }
