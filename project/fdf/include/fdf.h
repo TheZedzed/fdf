@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   fdf.h                                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/09/07 19:56:55 by azeraoul          #+#    #+#             */
+/*   Updated: 2021/09/07 19:56:57 by azeraoul         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef FDF_H
 # define FDF_H
 
@@ -6,6 +18,8 @@
 # include <math.h>
 # include <fcntl.h>
 # include <stdio.h>
+
+# define Z_DEPTH 2
 
 typedef struct s_mlx
 {
@@ -28,7 +42,6 @@ typedef struct s_fdf
 	float	zoom;
 	int		width;
 	int		height;
-	int		z_depth;
 	int		shift_x;
 	int		shift_y;
 }t_fdf;
@@ -41,6 +54,7 @@ typedef struct s_coordinates
 	float	y1;
 }t_coordinates;
 
+void		free_split(char **line);
 int			parse(t_fdf *el, char *filename);
 int			init(t_fdf **el, int ac, char *filename);
 int			manage_heap(int end, void *addr, t_fdf *el);

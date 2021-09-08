@@ -1,24 +1,32 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parse.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/09/07 19:53:22 by azeraoul          #+#    #+#             */
+/*   Updated: 2021/09/07 19:53:24 by azeraoul         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "fdf.h"
 
 static int	good_line(t_fdf *el, char **line)
 {
 	int	len;
-	int	i;
 
-	i = -1;
 	len = 0;
 	if (line)
 	{
-		manage_heap(0, line, el);
-		while (line[++i])
-		{
-			manage_heap(0, line[i], el);
+		while (line[len])
 			++len;
-		}
 		if (!el->width)
 			el->width = len;
 		if (len == el->width)
 			return (1);
+		else
+			free_split(line);
 	}
 	return (0);
 }
@@ -55,18 +63,22 @@ static int	create_line(t_fdf *el, char *str)
 	if (good_line(el, line))
 	{
 		i = 0;
-		el->map[index] = ft_calloc(el->width, sizeof(t_point));
-		manage_heap(0, el->map[index], el);
-		while (line[i])
+		if (*str)
 		{
-			el->map[index][i].z = ft_atoi(line[i]);
-			fill_color(&el->map[index][i], line[i]);
-			++i;
+			el->map[index] = ft_calloc(el->width, sizeof(t_point));
+			manage_heap(0, el->map[index], el);
+			while (line[i])
+			{
+				el->map[index][i].z = ft_atoi(line[i]);
+				fill_color(&el->map[index][i], line[i]);
+				++i;
+			}
 		}
 		++index;
-		return (1);
+		free_split(line);
+		return (0);
 	}
-	return (0);
+	return (1);
 }
 
 static int	create_map(t_fdf *el, int fd)
@@ -94,29 +106,27 @@ static int	create_map(t_fdf *el, int fd)
 int	parse(t_fdf *el, char *filename)
 {
 	char	*str;
+	int		err;
 	int		fd;
 	int		i;
 
 	i = 1;
+	err = 0;
 	str = NULL;
 	fd = open(filename, O_RDONLY);
-	if (fd != 1)
+	if (create_map(el, fd))
 	{
-		if (create_map(el, fd))
+		fd = open(filename, O_RDONLY);
+		while (!err && i)
 		{
-			fd = open(filename, O_RDONLY);
-			while (i)
-			{
-				i = get_next_line(fd, &str);
-				if (i == -1 || (*str && !create_line(el, str)))
-				{
-					close(fd);
-					return (1);
-				}
-			}
-			close(fd);
-			return (0);
+			i = get_next_line(fd, &str);
+			if (i == -1)
+				err = 1;
+			else if (*str)
+				err = create_line(el, str);
+			free(str);
 		}
+		close(fd);
 	}
-	return (1);
+	return (err);
 }

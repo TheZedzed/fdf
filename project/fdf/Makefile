@@ -6,7 +6,7 @@
 #    By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2021/08/19 19:09:28 by azeraoul          #+#    #+#              #
-#    Updated: 2021/08/20 12:11:02 by azeraoul         ###   ########.fr        #
+#    Updated: 2021/09/08 14:22:47 by azeraoul         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,9 +17,8 @@ CFLAGS	:= -g -Wall -Wextra -Werror
 LDFLAGS	:= -L./libft -L./mlx
 LDLIBS	:= -lm -lft -lmlx -lX11 -lXext
 FILES	:= fdf bresenham init parse utils
-FILES_B	:= fdf bresenham init parse utils adjust bresenham keys
 SRCS := $(addsuffix .c, $(addprefix srcs/, $(FILES)))
-SRCS_B := $(addsuffix _bonus.c, $(addprefix srcs_bonus/, $(FILES_B)))
+SRCS_B := $(addsuffix _bonus.c, $(addprefix srcs_bonus/, $(FILES)))
 OBJS	:= $(SRCS:.c=.o)
 OBJS_B	:= $(SRCS_B:.c=.o)
 RM		:= rm -rf

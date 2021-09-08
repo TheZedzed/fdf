@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/09/07 19:55:14 by azeraoul          #+#    #+#             */
+/*   Updated: 2021/09/07 19:55:17 by azeraoul         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "fdf.h"
 
 static void	quit(t_fdf *el)
@@ -17,7 +29,6 @@ static void	quit(t_fdf *el)
 			free(mlx->mlx_ptr);
 		}
 	}
-
 }
 
 int	manage_heap(int end, void *addr, t_fdf *el)
@@ -41,4 +52,20 @@ int	manage_heap(int end, void *addr, t_fdf *el)
 		ft_lstadd_back(&heap, new);
 	}
 	return (0);
+}
+
+void	free_split(char **line)
+{
+	int	len;
+
+	len = 0;
+	if (line)
+	{
+		while (line[len])
+		{
+			free(line[len]);
+			++len;
+		}
+		free(line);
+	}
 }

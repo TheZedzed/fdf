@@ -1,84 +1,115 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_bresenham_bonus.c                               :+:      :+:    :+:   */
+/*   bresenham_bonus.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcharvet <tcharvet@student.42.fr>          +#+  +:+       +#+        */
+/*   By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/08/14 17:27:03 by tcharvet          #+#    #+#             */
-/*   Updated: 2021/08/14 17:29:23 by tcharvet         ###   ########.fr       */
+/*   Created: 2021/09/08 15:33:39 by azeraoul          #+#    #+#             */
+/*   Updated: 2021/09/08 15:34:50 by azeraoul         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_fdf_bonus.h"
+#include "fdf_bonus.h"
 
-int	color_interpolation(int color_a, int color_b, int max, int i)
+static int	color_(int col1, int col2, float ratio)
 {
-	t_rgb	a;
-	t_rgb	b;
-	t_rgb	c;
-	int		color;
-	float	t;
+	int	a[3];
+	int	b[3];
+	int	c[3];
+	int	color;
 
-	if (!i)
-		return (color_b);
-	ft_bzero(&a, sizeof(a));
-	ft_bzero(&b, sizeof(b));
-	ft_bzero(&c, sizeof(c));
-	color = 0;
-	t = (i / (float)(max));
-	a.r = (color_a >> 16);
-	a.g = (color_a >> 8);
-	a.b = (color_a);
-	b.r = (color_b >> 16);
-	b.g = (color_b >> 8);
-	b.b = (color_b);
-	c.r = a.r + (a.r - b.r) * t;
-	c.g = a.g + (a.g - b.g) * t;
-	c.b = a.b + (a.b - b.b) * t;
-	color = ((c.r << 16) | (c.g << 8) | c.b);
+	a[0] = (col2 >> 16) & 0xf;
+	a[1] = (col2 >> 8) & 0xf;
+	a[2] = col2 & 0xf;
+	b[0] = (col1 >> 16) & 0xf;
+	b[1] = (col1 >> 8) & 0xf;
+	b[2] = col1 & 0xf;
+	c[0] = a[0] + (a[0] - b[0]) * ratio;
+	c[1] = a[1] + (a[1] - b[1]) * ratio;
+	c[2] = a[2] + (a[2] - b[2]) * ratio;
+	color = (c[0] << 16) | (c[1] << 8) | c[2];
 	return (color);
 }
 
-void	loop_bresenham(t_coordinates coord,
-	float steps [2], int colors_and_max[3], t_fdf *fdf)
+static void	init_steps_utils(t_coordinates *pts, float *steps, int *utils)
 {
-	int	color;
-	int	i;
-	int	max;
+	utils[1] = 0;
+	steps[0] = (pts->x1 - pts->x);
+	steps[1] = (pts->y1 - pts->y);
+	utils[0] = fmaxf(fabsf(steps[0]), fabsf(steps[1]));
+	steps[0] /= utils[0];
+	steps[1] /= utils[0];
+}
 
-	i = 0;
-	max = colors_and_max[2];
-	color = colors_and_max[0];
-	while ((int)(coord.x - coord.x1) || (int)(coord.y - coord.y1))
+static void	zoom_or_shift(t_fdf *el, t_coordinates *coord, int zoom)
+{
+	if (zoom)
 	{
-		if (colors_and_max[0] != colors_and_max[1])
-			color = color_interpolation(colors_and_max[1],
-					colors_and_max[0], max, i);
-		my_mlx_pixel_put(fdf->mlx->img, coord.x, coord.y, color);
-		coord.x += steps[0];
-		coord.y += steps[1];
-		++i;
+		coord->x *= el->zoom;
+		coord->y *= el->zoom;
+		coord->x1 *= el->zoom;
+		coord->y1 *= el->zoom;
+	}
+	else
+	{
+		coord->x += el->shift_x;
+		coord->y += el->shift_y;
+		coord->x1 += el->shift_x;
+		coord->y1 += el->shift_y;
 	}
 }
 
-void	bresenham_algo_bonus(t_coordinates coord, t_fdf *fdf)
+static void	isometric(t_coordinates *pts, t_fdf *el, int *z, int *z1)
 {
-	t_point	origin;
-	t_point	end;
-	float	x_step;
-	float	y_step;
-	int		max;
+	float	ratio1;
+	float	ratio2;
+	float	temp;
 
-	origin = fdf->map[(int)coord.y][(int)coord.x];
-	end = fdf->map[(int)coord.y1][(int)coord.x1];
-	zoom_coord(&coord, fdf->zoom);
-	projection_bonus(&coord.x, &coord.y,
-		(int [2]){origin.z, fdf->z_depth}, fdf->projection);
-	projection_bonus(&coord.x1, &coord.y1,
-		(int [2]){end.z, fdf->z_depth}, fdf->projection);
-	shift_coord(&coord, fdf->shift_x, fdf->shift_y);
-	calc_step_and_max(&x_step, &y_step, &max, coord);
-	loop_bresenham(coord, (float [2]){x_step, y_step},
-		(int [3]){origin.color, end.color, max}, fdf);
+	ratio1 = (*z * el->z_depth);
+	ratio2 = (*z1 * el->z_depth);
+	zoom_or_shift(el, &pts, 1);
+	if (!el->projection)
+	{
+		temp = pts->x;
+		pts->x -= pts->y;
+		pts->y = ((temp + pts->y) / 2) - ratio1;
+		temp = pts->x1;
+		pts->x1 -= pts->y1;
+		pts->y1 = ((temp + pts->y1) / 2) - ratio2;
+	}
+	else
+	{
+		pts->y -= ratio1;
+		pts->y1 = ratio2;
+	}
+	zoom_or_shift(el, &pts, 0);
+}
+
+void	bresenham_algo(t_coordinates pts, t_fdf *el)
+{
+	float	steps[2];
+	int		utils[2];
+	t_point	org;
+	t_point	end;
+	int		*ptr;
+
+	org = el->map[(int)pts.y][(int)pts.x];
+	end = el->map[(int)pts.y1][(int)pts.x1];
+	isometric(&pts, el, &org.z, &end.z);
+	init_steps_utils(&pts, steps, utils);
+	while ((int)(pts.x - pts.x1) || (int)(pts.y - pts.y1))
+	{
+		if (pts.x >= 0 && pts.y >= 0 && pts.x < 1920 && pts.y < 1080)
+		{
+			ptr = (el->mlx->addr + ((int)pts.y * 1920 + (int)pts.x));
+			if (org.color != end.color && utils[1])
+				*ptr = color_(org.color, end.color, utils[1] / utils[0]);
+			else
+				*ptr = org.color;
+		}
+		pts.x += steps[0];
+		pts.y += steps[1];
+		++utils[1];
+	}
 }

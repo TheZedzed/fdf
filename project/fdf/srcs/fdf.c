@@ -12,9 +12,24 @@
 
 #include "fdf.h"
 
+static void	set_zoom_shift_and_z(t_fdf *el)
+{
+	float	zoomy;
+	float	zoomx;
+	float	ratio;
+
+	zoomx = 1920 / (el->width - 1);
+	zoomy = 1080 / (el->height - 1);
+	ratio = fmaxf(el->width, el->height) / fminf(el->width, el->height) * 2;
+	el->zoom = fminf(zoomx, zoomy) / ratio;
+	if (el->zoom < 0)
+		el->zoom = 0;
+	el->shift_x = (1920 - (el->zoom * (el->width - 1))) / 2;
+	el->shift_y = (1080 - (el->zoom * (el->height - 1))) / 2;
+}
+
 static int	key_press(int keynote, t_fdf *el)
 {
-	printf("ok\n");
 	if (keynote == 0xff1b)
 		manage_heap(1, NULL, el);
 	return (0);
@@ -45,23 +60,6 @@ static int	main_loop(t_fdf *el)
 	return (0);
 }
 
-static void	set_zoom_shift_and_z(t_fdf *el)
-{
-	float	zoomy;
-	float	zoomx;
-	float	ratio;
-
-	zoomx = 1920 / (el->width - 1);
-	zoomy = 1080 / (el->height - 1);
-	ratio = fmaxf(el->width, el->height) / fminf(el->width, el->height) * 2;
-	el->zoom = fminf(zoomx, zoomy) / ratio;
-	if (el->zoom < 0)
-		el->zoom = 0;
-	el->shift_x = (1920 - (el->zoom * (el->width - 1))) / 2 ;
-	el->shift_y = (1080 - (el->zoom * (el->height - 1))) / 2 ;
-	el->z_depth = 2;
-}
-
 int	main(int ac, char **av)
 {
 	t_fdf	*el;
@@ -77,9 +75,8 @@ int	main(int ac, char **av)
 		{
 			mlx = el->mlx;
 			set_zoom_shift_and_z(el);
-			mlx_hook(mlx->win_ptr, 2, (1L << 2), key_press, el);
+			mlx_hook(mlx->win_ptr, 2, (1L << 0), key_press, el);
 			mlx_hook(mlx->win_ptr, 12, (1L << 15), main_loop, el);
-			//mlx_hook(mlx->win_ptr, 33, (1L << 5), key_press, el);
 			mlx_loop(mlx->mlx_ptr);
 		}
 		else

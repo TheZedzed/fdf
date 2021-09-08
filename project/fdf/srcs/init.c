@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   init.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/09/07 19:55:51 by azeraoul          #+#    #+#             */
+/*   Updated: 2021/09/07 19:55:54 by azeraoul         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "fdf.h"
 
 static int	check_file(char *filename)
@@ -23,7 +35,7 @@ static int	check_file(char *filename)
 static int	wrong_arg(int ac, char *filename)
 {
 	static char	*err_arg = "Wrong number of arguments\n";
-	static char *err_fdf = "Argument must be a file in format: *.fdf\n";
+	static char	*err_fdf = "Argument must be a file in format: *.fdf\n";
 	size_t		len;
 
 	if (ac == 2)

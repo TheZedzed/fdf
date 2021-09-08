@@ -1,97 +1,109 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_fdf_bonus.c                                     :+:      :+:    :+:   */
+/*   fdf_bonus.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcharvet <tcharvet@student.42nice.fr>      +#+  +:+       +#+        */
+/*   By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/08/13 15:33:10 by tcharvet          #+#    #+#             */
-/*   Updated: 2021/08/14 23:24:05 by tcharvet         ###   ########.fr       */
+/*   Created: 2021/09/08 15:33:54 by azeraoul          #+#    #+#             */
+/*   Updated: 2021/09/08 15:35:04 by azeraoul         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_fdf_bonus.h"
+#include "fdf_bonus.h"
 
-int	main_loop_bonus(t_fdf *fdf)
+static void	set_zoom_shift_and_z(t_fdf *el)
 {
-	unsigned int	y;
-	unsigned int	x;
-	t_mlx			*mlx;
+	float	zoomy;
+	float	zoomx;
+	float	ratio;
+
+	zoomx = 1920 / (el->width - 1);
+	zoomy = 1080 / (el->height - 1);
+	ratio = fmaxf(el->width, el->height) / fminf(el->width, el->height) * 2;
+	el->zoom = fminf(zoomx, zoomy) / ratio;
+	if (el->zoom < 0)
+		el->zoom = 0;
+	el->shift_x = (1920 - (el->zoom * (el->width - 1))) / 2;
+	el->shift_y = (1080 - (el->zoom * (el->height - 1))) / 2;
+	el->z_depth = 2;
+}
+
+static int	main_loop(t_fdf *el)
+{
+	t_mlx	*mlx;
+	int		y;
+	int		x;
 
 	y = 0;
-	mlx = fdf->mlx;
-	ft_bzero(fdf->mlx->img->addr, sizeof(unsigned int) * 1080 * 1920);
-	adjust_values(fdf);
-	while (y < fdf->height)
+	mlx = el->mlx;
+	while (y < el->height)
 	{
 		x = 0;
-		while (x < fdf->width)
+		while (x < el->width)
 		{
-			if (x < fdf->width - 1)
-				bresenham_algo_bonus((t_coordinates){x, y, x + 1, y}, fdf);
-			if (y < fdf->height - 1)
-				bresenham_algo_bonus((t_coordinates){x, y, x, y + 1}, fdf);
+			if (x < el->width - 1)
+				bresenham_algo((t_coordinates){x, y, x + 1, y}, el);
+			if (y < el->height - 1)
+				bresenham_algo((t_coordinates){x, y, x, y + 1}, el);
 			++x;
 		}
 		++y;
 	}
-	mlx_put_image_to_window(mlx->ptr, mlx->win_ptr, fdf->mlx->img->img, 0, 0);
+	mlx_put_image_to_window(mlx->mlx_ptr, mlx->win_ptr, mlx->img_ptr, 0, 0);
 	return (0);
 }
 
-int	key_press(int keycode, t_fdf *fdf)
+static int	key_press(int keycode, t_fdf *el)
 {
-	t_moove	*moove;
-
-	moove = &fdf->moove;
 	if (keycode == ESC_KEY)
-		quit(fdf, 0);
+		manage_heap(1, NULL, el);
+	else if (keycode == ZOOM)
+		el->zoom += 1;
+	else if (keycode == DEZOOM && el->zoom - 1 > 0)
+		el->zoom -= 1;
 	else if (keycode == PROJECTION)
-		toogle(&fdf->projection);
-	else if (keycode == ZOOM || keycode == DEZOOM)
-		zoom_or_dezoom_key(keycode, moove);
-	else if (keycode == SHIFT_LEFT || keycode == SHIFT_UP
-		|| keycode == SHIFT_BOTTOM || keycode == SHIFT_RIGHT)
-		shift_keys(keycode, moove);
-	else if (keycode == Z_DEPTH_LESS || keycode == Z_DEPTH_MORE)
-		z_depth_keys(keycode, moove);
-	return (0);
-}
-
-int	key_release(int keycode, t_fdf *fdf)
-{
-	t_moove	*moove;
-
-	moove = &fdf->moove;
-	ft_bzero(moove, sizeof(t_moove));
-	if (keycode == ESC_KEY)
-		quit(fdf, 0);
+		el->projection = !el->projection;
+	else if (keycode == SHIFT_UP)
+		el->shift_y += 10;
+	else if (keycode == SHIFT_DOWN)
+		el->shift_y -= 10;
+	else if (keycode == SHIFT_LEFT)
+		el->shift_x -= 10;
+	else if (keycode == SHIFT_RIGHT)
+		el->shift_x += 10;
+	else if (keycode == Z_DEPTH_MORE)
+		el->z_depth += 1;
+	else if (keycode == Z_DEPTH_LESS)
+		el->z_depth -= 1;
+	else
+		return (0);
+	ft_memset(el->mlx->addr, 0, sizeof(int) * 1920 * 1080);
+	main_loop(el);
 	return (0);
 }
 
 int	main(int ac, char **av)
 {
-	t_fdf	fdf;
-	t_mlx	mlx;
-	t_img	img;
-	t_moove	moove;
+	t_fdf	*el;
+	t_mlx	*mlx;
+	int		err;
 
-	check_arg(ac, av[1]);
-	ft_bzero(&fdf, sizeof(t_fdf));
-	ft_bzero(&mlx, sizeof(t_mlx));
-	fdf.mlx = &mlx;
-	fdf.fd = check_file(av[1]);
-	if (recursive_parse(&fdf, 0) == -1)
-		quit(&fdf, "Parse error\n");
-	close(fdf.fd);
-	set_zoom_shift_and_z(&fdf);
-	ft_bzero(&moove, sizeof(t_moove));
-	fdf.moove = moove;
-	mlx.img = &img;
-	init_mlx(&mlx, &fdf);
-	mlx_loop_hook(mlx.ptr, &main_loop_bonus, &fdf);
-	mlx_hook(mlx.win_ptr, 2, (1L << 0), &key_press, &fdf);
-	mlx_hook(mlx.win_ptr, 3, (1L << 1), &key_release, &fdf);
-	mlx_loop(mlx.ptr);
-	return (0);
+	el = NULL;
+	err = init(&el, ac, av[1]);
+	if (!err)
+	{
+		err = parse(el, av[1]);
+		if (!err)
+		{
+			mlx = el->mlx;
+			set_zoom_shift_and_z(el);
+			mlx_hook(mlx->win_ptr, 2, (1L << 0), key_press, el);
+			mlx_hook(mlx->win_ptr, 12, (1L << 15), main_loop, el);
+			mlx_loop(mlx->mlx_ptr);
+		}
+		else
+			write(2, "Parse error\n", 12);
+	}
+	return (manage_heap(1, NULL, el));
 }
