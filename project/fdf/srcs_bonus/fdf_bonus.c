@@ -37,6 +37,7 @@ static int	main_loop(t_fdf *el)
 
 	y = 0;
 	mlx = el->mlx;
+	ft_memset(el->mlx->addr, 0, sizeof(int) * 1920 * 1080);
 	while (y < el->height)
 	{
 		x = 0;
@@ -78,9 +79,7 @@ static int	key_press(int keycode, t_fdf *el)
 		el->z_depth -= 1;
 	else
 		return (0);
-	ft_memset(el->mlx->addr, 0, sizeof(int) * 1920 * 1080);
-	main_loop(el);
-	return (0);
+	return (main_loop(el));
 }
 
 int	main(int ac, char **av)

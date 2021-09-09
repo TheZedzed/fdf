@@ -43,7 +43,7 @@ static void	fill_color(t_point *point, char *line)
 		{
 			i = -1;
 			while (color[++i])
-				ft_tolower(color[i]);
+				color[i] = ft_tolower(color[i]);
 			point->color = ft_atoi_base(color + 2, "0123456789abcdef");
 		}
 		else
@@ -63,16 +63,13 @@ static int	create_line(t_fdf *el, char *str)
 	if (good_line(el, line))
 	{
 		i = 0;
-		if (*str)
+		el->map[index] = ft_calloc(el->width, sizeof(t_point));
+		manage_heap(0, el->map[index], el);
+		while (line[i])
 		{
-			el->map[index] = ft_calloc(el->width, sizeof(t_point));
-			manage_heap(0, el->map[index], el);
-			while (line[i])
-			{
-				el->map[index][i].z = ft_atoi(line[i]);
-				fill_color(&el->map[index][i], line[i]);
-				++i;
-			}
+			el->map[index][i].z = ft_atoi(line[i]);
+			fill_color(&el->map[index][i], line[i]);
+			++i;
 		}
 		++index;
 		free_split(line);

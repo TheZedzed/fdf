@@ -6,7 +6,7 @@
 /*   By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/09/08 15:33:39 by azeraoul          #+#    #+#             */
-/*   Updated: 2021/09/08 15:34:50 by azeraoul         ###   ########.fr       */
+/*   Updated: 2021/09/09 15:51:36 by azeraoul         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,12 +19,12 @@ static int	color_(int col1, int col2, float ratio)
 	int	c[3];
 	int	color;
 
-	a[0] = (col2 >> 16) & 0xf;
-	a[1] = (col2 >> 8) & 0xf;
-	a[2] = col2 & 0xf;
-	b[0] = (col1 >> 16) & 0xf;
-	b[1] = (col1 >> 8) & 0xf;
-	b[2] = col1 & 0xf;
+	a[0] = (col2 >> 16);
+	a[1] = (col2 >> 8);
+	a[2] = col2;
+	b[0] = (col1 >> 16);
+	b[1] = (col1 >> 8);
+	b[2] = col1;
 	c[0] = a[0] + (a[0] - b[0]) * ratio;
 	c[1] = a[1] + (a[1] - b[1]) * ratio;
 	c[2] = a[2] + (a[2] - b[2]) * ratio;
@@ -62,13 +62,13 @@ static void	zoom_or_shift(t_fdf *el, t_coordinates *coord, int zoom)
 
 static void	isometric(t_coordinates *pts, t_fdf *el, int *z, int *z1)
 {
-	float	ratio1;
-	float	ratio2;
+	int		ratio1;
+	int		ratio2;
 	float	temp;
 
 	ratio1 = (*z * el->z_depth);
 	ratio2 = (*z1 * el->z_depth);
-	zoom_or_shift(el, &pts, 1);
+	zoom_or_shift(el, pts, 1);
 	if (!el->projection)
 	{
 		temp = pts->x;
@@ -81,9 +81,9 @@ static void	isometric(t_coordinates *pts, t_fdf *el, int *z, int *z1)
 	else
 	{
 		pts->y -= ratio1;
-		pts->y1 = ratio2;
+		pts->y1 -= ratio2;
 	}
-	zoom_or_shift(el, &pts, 0);
+	zoom_or_shift(el, pts, 0);
 }
 
 void	bresenham_algo(t_coordinates pts, t_fdf *el)
@@ -104,7 +104,7 @@ void	bresenham_algo(t_coordinates pts, t_fdf *el)
 		{
 			ptr = (el->mlx->addr + ((int)pts.y * 1920 + (int)pts.x));
 			if (org.color != end.color && utils[1])
-				*ptr = color_(org.color, end.color, utils[1] / utils[0]);
+				*ptr = color_(org.color, end.color, utils[0] / utils[1]);
 			else
 				*ptr = org.color;
 		}
