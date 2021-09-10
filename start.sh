@@ -6,7 +6,7 @@
 #    By: azeraoul <azeraoul@student.42nice.fr>      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2021/08/16 11:53:04 by azeraoul          #+#    #+#              #
-#    Updated: 2021/08/19 17:42:40 by azeraoul         ###   ########.fr        #
+#    Updated: 2021/09/10 11:55:03 by azeraoul         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 #!/bin/sh
@@ -35,5 +35,6 @@ then
 	printf "\033[1;33mbuild\n\033[0m"
 	docker build -t eval .
 	printf "\033[1;32mexec\n\033[0m"
-	docker run -it --init --rm --name="eval" eval
+	xhost local:docker
+	docker run -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -it --init --rm --name="eval" eval
 fi

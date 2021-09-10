@@ -7,6 +7,7 @@ RUN apk -U upgrade && apk add \
 	valgrind \
 	libx11-dev \
 	libxext-dev \
+	libbsd-dev
 
 WORKDIR	/home
 
